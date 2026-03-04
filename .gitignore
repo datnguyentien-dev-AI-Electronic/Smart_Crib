@@ -1,0 +1,12 @@
+# ===========================
+# Smart Crib - .gitignore
+# Chỉ backup folder Script
+# ===========================
+
+# Bỏ qua TẤT CẢ mọi thứ
+*
+
+# Ngoại lệ: Cho phép .gitignore và toàn bộ folder Script
+!.gitignore
+!Script/
+!Script/**
