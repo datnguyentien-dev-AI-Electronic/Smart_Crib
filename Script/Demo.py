@@ -16,7 +16,7 @@ MODEL_PATH = "E:/Smart_Crib/yolov26_250e_1000pic_702010/content/runs/detect/trai
 VIDEO_PATH = 0  
 SAVE_DIR = "E:/Smart_Crib/detected_adults"
 
-# YOLO Class IDs (Kiểm tra file data.yaml của bạn xem Face là 0 hay 1)
+# YOLO Class IDs 
 CLS_FACE = 1
 CLS_BODY = 0
 
@@ -30,6 +30,10 @@ BUFFER_SIZE = 15
 # Frame Skipping: FaceMesh chỉ chạy mỗi N frame (YOLO vẫn chạy liên tục)
 # Tăng để FPS cao hơn, giảm để phản ứng nhanh hơn. Gợi ý: 2 hoặc 3
 FACEMESH_SKIP = 2
+
+# Cooldown trạng thái: số giây tối thiểu trước khi cho phép đổi sang trạng thái mới
+# Tăng để ổn định hơn, giảm để phản ứng nhanh hơn. Gợi ý: 2.0 - 5.0
+STATE_COOLDOWN = 3.0
 
 # =============================================================================
 # 2. KHỞI TẠO MODEL & THƯ VIỆN
@@ -112,9 +116,13 @@ def main():
     LIPS = [61, 291, 13, 14]  # 61: Left, 291: Right, 13: Upper, 14: Lower
 
     frame_count = 0
-    mar_val = 0.0  # Giữ giá trị cũ khi frame bị skip
-    ear_val = 0.0  # Giữ giá trị cũ khi frame bị skip
-    black_display = np.zeros((500, 500, 3), dtype=np.uint8)  # Khởi tạo 1 lần, giữ mesh cũ khi skip
+    mar_val = 0.0
+    ear_val = 0.0
+    black_display = np.zeros((500, 500, 3), dtype=np.uint8)
+
+    # Cooldown: trạng thái được xác nhận cuối cùng hiển thị lên UI
+    confirmed_status = "Waiting..."
+    last_state_change_time = 0.0
 
     while cap.isOpened():
         start_time = time.time()
@@ -206,7 +214,7 @@ def main():
         else:
             final_status = "Waiting..."
 
-        # Chọn màu hiển thị
+        # Chọn màu hiển thị theo final_status (raw voting)
         if "KHOC" in final_status or "UP" in final_status:
             current_color = (0, 0, 255)  # Đỏ
         elif "NGU" in final_status:
@@ -214,13 +222,32 @@ def main():
         else:
             current_color = (0, 255, 0)  # Xanh
 
+        # --- BƯỚC 3b: COOLDOWN - Chỉ đổi trạng thái sau STATE_COOLDOWN giây ---
+        if final_status != confirmed_status:
+            if time.time() - last_state_change_time >= STATE_COOLDOWN:
+                confirmed_status = final_status
+                last_state_change_time = time.time()
+
+        # Cập nhật màu theo confirmed_status (ổn định)
+        if "KHOC" in confirmed_status or "UP" in confirmed_status:
+            current_color = (0, 0, 255)
+        elif "NGU" in confirmed_status:
+            current_color = (0, 255, 255)
+        elif "TRONG" in confirmed_status:
+            current_color = (150, 150, 150)  # Xám
+        else:
+            current_color = (0, 255, 0)
+
         # --- BƯỚC 4: TRỐNG (Đã xóa phát hiện người lớn để tối ưu FPS) ---
 
         # --- BƯỚC 5: HIỂN THỊ GIAO DIỆN (UI) ---
 
-        # 1. Trạng thái chính
-        cv2.putText(display, f"STATUS: {final_status}", (20, 50),
+        # 1. Trạng thái chính (confirmed - ổn định)
+        cv2.putText(display, f"STATUS: {confirmed_status}", (20, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, current_color, 3)
+        # Raw voting (nhỏ, debug)
+        cv2.putText(display, f"Raw: {final_status}", (20, 85),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
 
         # 2. Thanh Debug (MAR & EAR)
         # Vẽ background mờ cho thanh debug
