@@ -10,9 +10,9 @@ from collections import deque, Counter
 # =============================================================================
 
 # Đường dẫn 
-MODEL_PATH = "E:/Smart_Crib/yolov26_250e_1000pic_702010/train/weights/best.pt"
+MODEL_PATH = "E:/Smart_Crib/yolov26_250e_1000pic_702010/train/weights/best.pt" # Đường dẫn file mô hình
 #MODEL_PATH = "E:/Smart_Crib/yolov26_250e_1000pic_702010/train/weights/best_ncnn_model"
-VIDEO_PATH = "E:/Smart_Crib/test/1100107673-preview.mp4"
+VIDEO_PATH = "E:/Smart_Crib/test/1100107673-preview.mp4" # Đường dẫn video test
 #VIDEO_PATH = 0
 # YOLO Class IDs 
 CLS_FACE = 1
